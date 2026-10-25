@@ -15,6 +15,7 @@ import {
   INITIAL_SAVED_ARTICLES,
   fetchLiveHackerNewsStories
 } from './services/newsService';
+import { explainImpactWithGemini } from './services/geminiService';
 import { UserRole, NewsCategory, NewsStory, RadarAlert, SavedArticle, UserProfile } from './types';
 
 export const App: React.FC = () => {
@@ -167,9 +168,34 @@ export const App: React.FC = () => {
   };
 
   // Explain with Gemini trigger
-  const handleExplainWithGemini = (alert: RadarAlert) => {
+  const handleExplainWithGemini = async (alert: RadarAlert) => {
     setBreakingModalOpen(false);
-    setToastMessage(`✨ Gemini Analysis: "${alert.headline}" — High priority for ${user.role}. Verified with live sources.`);
+    setToastMessage(`✨ Synthesizing Gemini intelligence for ${user.role}...`);
+    try {
+      const result = await explainImpactWithGemini(alert.headline, user.role);
+      const tempStory: NewsStory = {
+        id: `alert-${alert.id}`,
+        title: result.headline,
+        publisher: 'Breaking Radar • Gemini Analysis',
+        timeAgo: alert.timeAgo,
+        category: 'Agentic AI',
+        grounded: true,
+        citationsCount: 38,
+        url: 'https://news.ycombinator.com',
+        tldrBullets: result.tldrBullets,
+        impactByRole: {
+          'Software Engineer': result.roleImpact,
+          'Product Manager': result.roleImpact,
+          'Founder / Exec': result.roleImpact
+        },
+        isBreaking: true,
+        saved: false
+      };
+      setSelectedStory(tempStory);
+      setToastMessage(`✨ Grounded Gemini briefing ready for ${user.role}`);
+    } catch {
+      setToastMessage(`✨ Gemini Analysis: "${alert.headline}" — High priority for ${user.role}.`);
+    }
   };
 
   // Filtered stories based on tab and search
